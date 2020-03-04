@@ -1,0 +1,19 @@
+# -*- python -*-
+
+cc_library(
+    name = "libfranka",
+    srcs = glob([
+        "src/*.h",
+        "src/*.cpp",
+    ]),
+    hdrs = glob([
+        "include/franka/*.h"
+    ]),
+    strip_include_prefix = "include",
+    deps = [
+        "@eigen",
+        "@libfranka_common",
+        "@libpoco",
+    ],
+    visibility = ["//visibility:public"],
+)

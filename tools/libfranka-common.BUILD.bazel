@@ -1,0 +1,10 @@
+# -*- python -*-
+
+cc_library(
+    name = "libfranka_common",
+    hdrs = glob([
+        "include/research_interface/**/*.h"
+    ]),
+    strip_include_prefix = "include",
+    visibility = ["//visibility:public"],
+)

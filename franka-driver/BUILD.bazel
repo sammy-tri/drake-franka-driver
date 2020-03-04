@@ -1,0 +1,14 @@
+# -*- python -*-
+
+package(default_visibility = ["//visibility:public"])
+
+cc_binary(
+    name = "franka_driver",
+    srcs = [
+        "franka_driver.cc",
+    ],
+    deps = [
+    	"@gflags",
+        "@libfranka",
+    ],
+)

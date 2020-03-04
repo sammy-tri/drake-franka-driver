@@ -1,0 +1,10 @@
+# -*- python -*-
+
+cc_library(
+    name = "libpoco",
+    srcs = glob(["lib/libPoco*.so"]),
+    hdrs = glob([
+        "include/Poco/**/*.h",
+    ]),
+    visibility = ["//visibility:public"],
+)
