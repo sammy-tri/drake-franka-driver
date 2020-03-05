@@ -38,7 +38,24 @@ rules_python_repository(name = "rules_python", mirrors = DEFAULT_MIRRORS)
 load("@drake//tools/workspace/gflags:repository.bzl", "gflags_repository")
 gflags_repository(name = "gflags")
 
+load("@drake//tools/workspace/glib:repository.bzl", "glib_repository")
+glib_repository(name = "glib")
+
 load("@drake//tools/workspace:github.bzl", "github_archive")
+
+load("@drake//tools/workspace/lcm:repository.bzl", "lcm_repository")
+lcm_repository(name = "lcm", mirrors = DEFAULT_MIRRORS)
+
+load("@drake//tools/workspace/lcmtypes_bot2_core:repository.bzl", "lcmtypes_bot2_core_repository")  # noqa
+lcmtypes_bot2_core_repository(name = "lcmtypes_bot2_core",
+                              mirrors = DEFAULT_MIRRORS)
+
+load("@drake//tools/workspace/lcmtypes_robotlocomotion:repository.bzl", "lcmtypes_robotlocomotion_repository")  # noqa
+lcmtypes_robotlocomotion_repository(name = "lcmtypes_robotlocomotion",
+                                    mirrors = DEFAULT_MIRRORS)
+
+load("@drake//tools/workspace/python:repository.bzl", "python_repository")
+python_repository(name = "python")
 
 github_archive(
     name = "libfranka_common",

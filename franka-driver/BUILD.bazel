@@ -9,6 +9,9 @@ cc_binary(
     ],
     deps = [
     	"@gflags",
+        "@lcm",
+        "@lcmtypes_bot2_core",
+        "@lcmtypes_robotlocomotion",
         "@libfranka",
     ],
 )
