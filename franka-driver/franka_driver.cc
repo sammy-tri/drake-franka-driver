@@ -94,28 +94,18 @@ class FrankaDriver {
         FLAGS_lcm_command_channel,
         &FrankaDriver::HandleCommandMessage, this);
     // Only pay attention to the latest command.
-    sub->setQueueCapacity(1);
+    sub->setQueueCapacity(5);
   }
 
-  franka::JointPositions DoControl(const franka::RobotState& state,
-                                   franka::Duration)  {
+  franka::JointPositions DoPositionControl(const franka::RobotState& state,
+                                           franka::Duration)  {
     if (ticks_++ > 1000) {
       // TODO(sammy-tri) Publish robot state via LCM.
       PrintRobotState(state);
       ticks_ = 0;
     }
 
-    const int64_t now = micros();
-
-    if (!FLAGS_lcm_robot_state_channel.empty()) {
-      state_msg_.utime = now;
-      for (int i = 0; i < state_msg_.num_joints; ++i) {
-        state_msg_.joint_position[i] = state.q[i];
-        state_msg_.joint_velocity[i] = state.dq[i];
-        state_msg_.joint_effort[i] = state.tau_J[i];
-      }
-      lcm_.publish(FLAGS_lcm_robot_state_channel, &state_msg_);
-    }
+    PublishRobotState(state);
 
     // Poll for incoming command messages.
     while (lcm_.handleTimeout(0) > 0) {}
@@ -137,8 +127,47 @@ class FrankaDriver {
     return positions;
   }
 
+  franka::JointVelocities DoVelocityControl(const franka::RobotState& state,
+                                            franka::Duration)  {
+    if (ticks_++ > 1000) {
+      // TODO(sammy-tri) Publish robot state via LCM.
+      PrintRobotState(state);
+      ticks_ = 0;
+    }
+
+    PublishRobotState(state);
+
+    // Poll for incoming command messages.
+    while (lcm_.handleTimeout(0) > 0) {}
+
+    franka::JointVelocities v({0, 0, 0, 0, 0, 0, 0});
+    if (!command_) {
+      return v;
+    }
+
+    const int64_t now = micros();
+    if (std::abs(now - command_->utime) > 100000) {
+      std::cout << "Resetting stale command\n";
+      command_.reset();
+      return v;
+    }
+
+    // TODO(sammy-tri) Add support for velocity or torque control.
+    if (command_->num_joints != state.q.size()) {
+      throw std::runtime_error(
+          "Received command with unexpected number of joints");
+    }
+
+    for (int i = 0; i < command_->num_joints; ++i) {
+      v.dq[i] = command_->joint_velocity[i];
+    }
+    return v;
+  }
+
   void ControlLoop() {
-    robot_.control(std::bind(&FrankaDriver::DoControl, this,
+    //robot_.control(std::bind(&FrankaDriver::DoPositionControl, this,
+    //std::placeholders::_1, std::placeholders::_2));
+    robot_.control(std::bind(&FrankaDriver::DoVelocityControl, this,
                              std::placeholders::_1, std::placeholders::_2));
   }
 
@@ -147,6 +176,20 @@ class FrankaDriver {
                             const std::string& chan,
                             const bot_core::joint_state_t* command) {
     command_ = *command;
+  }
+
+  void PublishRobotState(const franka::RobotState& state) {
+    const int64_t now = micros();
+
+    if (!FLAGS_lcm_robot_state_channel.empty()) {
+      state_msg_.utime = now;
+      for (int i = 0; i < state_msg_.num_joints; ++i) {
+        state_msg_.joint_position[i] = state.q[i];
+        state_msg_.joint_velocity[i] = state.dq[i];
+        state_msg_.joint_effort[i] = state.tau_J[i];
+      }
+      lcm_.publish(FLAGS_lcm_robot_state_channel, &state_msg_);
+    }
   }
 
   franka::Robot robot_;
