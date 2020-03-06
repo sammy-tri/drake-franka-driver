@@ -168,7 +168,9 @@ class FrankaDriver {
     //robot_.control(std::bind(&FrankaDriver::DoPositionControl, this,
     //std::placeholders::_1, std::placeholders::_2));
     robot_.control(std::bind(&FrankaDriver::DoVelocityControl, this,
-                             std::placeholders::_1, std::placeholders::_2));
+                             std::placeholders::_1, std::placeholders::_2),
+		   franka::ControllerMode::kJointImpedance,
+		   true, franka::kMaxCutoffFrequency);		   
   }
 
  private:
