@@ -20,7 +20,9 @@ DEFINE_string(lcm_robot_state_channel, "EST_ROBOT_STATE",
 DEFINE_string(lcm_command_channel, "FRANKA_COMMAND",
               "Channel to listen for commanded joint states.  "
               "Effort and velocity are ignored.");
-
+DEFINE_string(control_mode, "velocity",
+              "Select position or velocity control mode.  "
+              "Use of position mode is not recommended.");
 namespace franka_driver {
 
 int64_t micros() {
@@ -165,12 +167,18 @@ class FrankaDriver {
   }
 
   void ControlLoop() {
-    //robot_.control(std::bind(&FrankaDriver::DoPositionControl, this,
-    //std::placeholders::_1, std::placeholders::_2));
-    robot_.control(std::bind(&FrankaDriver::DoVelocityControl, this,
-                             std::placeholders::_1, std::placeholders::_2),
-		   franka::ControllerMode::kJointImpedance,
-		   true, franka::kMaxCutoffFrequency);		   
+    if (FLAGS_control_mode == "position") {
+      robot_.control(std::bind(&FrankaDriver::DoPositionControl, this,
+                               std::placeholders::_1, std::placeholders::_2));
+    } else if (FLAGS_control_mode == "velocity") {
+      robot_.control(std::bind(&FrankaDriver::DoVelocityControl, this,
+                               std::placeholders::_1, std::placeholders::_2),
+                     franka::ControllerMode::kJointImpedance,
+                     true, franka::kMaxCutoffFrequency);
+    } else {
+      throw std::runtime_error("Unknown control mode: " + FLAGS_control_mode);
+    }
+
   }
 
  private:

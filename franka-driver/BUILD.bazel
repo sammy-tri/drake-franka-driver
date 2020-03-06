@@ -15,3 +15,14 @@ cc_binary(
         "@libfranka",
     ],
 )
+
+cc_binary(
+    name = "franka_hand_control",
+    srcs = [
+        "franka_hand_control.cc",
+    ],
+    deps = [
+    	"@gflags",
+        "@libfranka",
+    ],
+)
