@@ -39,6 +39,7 @@ int main(int argc, char** argv) {
   while (true) {
     std::cout << "\n";
     PrintGripperState(hand.readOnce());
+    std::cout << "\ngripper_cmd: ";
 
     std::cin.getline(buf.data(), buf.size());
     std::string cmd(buf.data());
@@ -63,7 +64,7 @@ int main(int argc, char** argv) {
         std::cout << "open failed\n";
       }
     } else if (cmd.compare("m") == 0) {
-      if (!hand.move(max_width, speed)) {
+      if (!hand.move(width, speed)) {
         std::cout << "move failed\n";
       }
     } else if (cmd.compare("f") == 0) {
