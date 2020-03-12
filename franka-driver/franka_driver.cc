@@ -47,6 +47,11 @@ void PrintRobotState(const franka::RobotState& state) {
     PrintArray("tau_J", state.tau_J);
     PrintArray("dtau_J", state.dtau_J);
     PrintArray("tau_ext_hat_filtered", state.tau_ext_hat_filtered);
+    PrintArray("joint_contact", state.joint_contact);
+    PrintArray("joint_contact", state.joint_collision);
+    PrintArray("cartesian_contact", state.cartesian_contact);
+    PrintArray("cartesian_collision", state.cartesian_collision);
+
     //std::cout << "errors: " << state.current_errors << "\n";
     std::cout << "control success rate: " << state.control_command_success_rate << "\n";
     std::cout << "mode: " << static_cast<int>(state.robot_mode) << "\n";
