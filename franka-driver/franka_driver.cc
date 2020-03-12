@@ -41,10 +41,14 @@ void PrintArray(const std::string& name, std::array<T, N> data) {
 
 void PrintRobotState(const franka::RobotState& state) {
     PrintArray("q", state.q);
+    PrintArray("q_d", state.q_d);
     PrintArray("dq", state.dq);
+    PrintArray("dq_d", state.dq_d);
+    PrintArray("ddq_d", state.ddq_d);
     PrintArray("theta", state.theta);
     PrintArray("dtheta", state.dtheta);
     PrintArray("tau_J", state.tau_J);
+    PrintArray("tau_J_d", state.tau_J_d);
     PrintArray("dtau_J", state.dtau_J);
     PrintArray("tau_ext_hat_filtered", state.tau_ext_hat_filtered);
     PrintArray("joint_contact", state.joint_contact);
@@ -52,10 +56,10 @@ void PrintRobotState(const franka::RobotState& state) {
     PrintArray("cartesian_contact", state.cartesian_contact);
     PrintArray("cartesian_collision", state.cartesian_collision);
 
-    //std::cout << "errors: " << state.current_errors << "\n";
+    std::cout << "errors: " << std::string(state.current_errors) << "\n";
     std::cout << "control success rate: " << state.control_command_success_rate << "\n";
     std::cout << "mode: " << static_cast<int>(state.robot_mode) << "\n";
-    //std::cout << "time: " << state.time << "\n";
+    std::cout << "time: " << state.time.toSec() << "\n";
 }
 
 class FrankaDriver {
@@ -73,7 +77,7 @@ class FrankaDriver {
         {{20.0, 20.0, 20.0, 20.0, 20.0, 20.0}},
         {{20.0, 20.0, 20.0, 20.0, 20.0, 20.0}},
         {{10.0, 10.0, 10.0, 10.0, 10.0, 10.0}},
-        {{10.0, 10.0, 10.0, 10.0, 10.0, 10.0}});
+        {{20.0, 20.0, 20.0, 20.0, 20.0, 20.0}});
     robot_.setJointImpedance({{3000, 3000, 3000, 2500, 2500, 2000, 2000}});
     robot_.setCartesianImpedance({{3000, 3000, 3000, 300, 300, 300}});
 
