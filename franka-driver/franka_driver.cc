@@ -7,6 +7,7 @@
 
 #include <bot_core/joint_state_t.hpp>
 #include <bot_core/robot_state_t.hpp>
+#include <drake/lcmt_panda_status.hpp>
 #include <franka/robot.h>
 #include <gflags/gflags.h>
 #include <lcm/lcm-cpp.hpp>
@@ -17,17 +18,31 @@ DEFINE_string(lcm_url, "", "LCM URL for Kuka driver");
 DEFINE_string(lcm_robot_state_channel, "EST_ROBOT_STATE",
               "Channel to publish robot_state_t messages on.  "
               "If blank message will not be published.");
-DEFINE_string(lcm_command_channel, "FRANKA_COMMAND",
+DEFINE_string(lcm_command_channel, "PANDA_COMMAND",
               "Channel to listen for commanded joint states.  "
               "Effort and velocity are ignored.");
+DEFINE_string(lcm_status_channel, "PANDA_STATUS",
+              "Channel to publish lcmt_panda_status messages on.");
 DEFINE_string(control_mode, "velocity",
               "Select position or velocity control mode.  "
               "Use of position mode is not recommended.");
+
 namespace franka_driver {
 
 int64_t micros() {
   return std::chrono::duration_cast<std::chrono::microseconds>(
       std::chrono::system_clock::now().time_since_epoch()).count();
+}
+
+// dest, src syntax like memcpy
+template <typename T, std::size_t N>
+void CopyArray(std::vector<T>* dest, const std::array<T, N>& src) {
+  dest->resize(N);
+  if (N == 0) {
+    return;
+  }
+
+  memcpy(dest->data(), src.data(), N * sizeof(T));
 }
 
 template <typename T, std::size_t N>
@@ -85,21 +100,32 @@ class FrankaDriver {
     initial_q_ = state.q;
     PrintRobotState(state);
 
-    state_msg_.num_joints = state.q.size();
+    robot_state_msg_.num_joints = state.q.size();
     if (state.q.size() != 7) {
       throw std::runtime_error("Got unexpected number of joints!");
     }
 
-    state_msg_.joint_name.push_back("panda_joint1");
-    state_msg_.joint_name.push_back("panda_joint2");
-    state_msg_.joint_name.push_back("panda_joint3");
-    state_msg_.joint_name.push_back("panda_joint4");
-    state_msg_.joint_name.push_back("panda_joint5");
-    state_msg_.joint_name.push_back("panda_joint6");
-    state_msg_.joint_name.push_back("panda_joint7");
-    state_msg_.joint_position.resize(state_msg_.num_joints, 0.);
-    state_msg_.joint_velocity.resize(state_msg_.num_joints, 0.);
-    state_msg_.joint_effort.resize(state_msg_.num_joints, 0.);
+    robot_state_msg_.joint_name.push_back("panda_joint1");
+    robot_state_msg_.joint_name.push_back("panda_joint2");
+    robot_state_msg_.joint_name.push_back("panda_joint3");
+    robot_state_msg_.joint_name.push_back("panda_joint4");
+    robot_state_msg_.joint_name.push_back("panda_joint5");
+    robot_state_msg_.joint_name.push_back("panda_joint6");
+    robot_state_msg_.joint_name.push_back("panda_joint7");
+    robot_state_msg_.joint_position.resize(robot_state_msg_.num_joints, 0.);
+    robot_state_msg_.joint_velocity.resize(robot_state_msg_.num_joints, 0.);
+    robot_state_msg_.joint_effort.resize(robot_state_msg_.num_joints, 0.);
+
+    status_msg_.num_joints = state.q.size();
+    status_msg_.joint_position.resize(status_msg_.num_joints, 0.);
+    status_msg_.joint_position_desired.resize(status_msg_.num_joints, 0.);
+    status_msg_.joint_velocity.resize(status_msg_.num_joints, 0.);
+    status_msg_.joint_velocity_desired.resize(status_msg_.num_joints, 0.);
+    status_msg_.joint_velocity_desired.resize(status_msg_.num_joints, 0.);
+    status_msg_.joint_acceleration_desired.resize(status_msg_.num_joints, 0.);
+    status_msg_.joint_torque.resize(status_msg_.num_joints, 0.);
+    status_msg_.joint_torque_desired.resize(status_msg_.num_joints, 0.);
+    status_msg_.joint_torque_external.resize(status_msg_.num_joints, 0.);
 
     lcm::Subscription* sub = lcm_.subscribe(
         FLAGS_lcm_command_channel,
@@ -201,21 +227,68 @@ class FrankaDriver {
     const int64_t now = micros();
 
     if (!FLAGS_lcm_robot_state_channel.empty()) {
-      state_msg_.utime = now;
-      for (int i = 0; i < state_msg_.num_joints; ++i) {
-        state_msg_.joint_position[i] = state.q[i];
-        state_msg_.joint_velocity[i] = state.dq[i];
-        state_msg_.joint_effort[i] = state.tau_J[i];
+      robot_state_msg_.utime = now;
+      for (int i = 0; i < robot_state_msg_.num_joints; ++i) {
+        robot_state_msg_.joint_position[i] = state.q[i];
+        robot_state_msg_.joint_velocity[i] = state.dq[i];
+        robot_state_msg_.joint_effort[i] = state.tau_J[i];
       }
-      lcm_.publish(FLAGS_lcm_robot_state_channel, &state_msg_);
+      lcm_.publish(FLAGS_lcm_robot_state_channel, &robot_state_msg_);
     }
+
+    status_msg_.utime = now;
+    CopyArray(&status_msg_.joint_position, state.q);
+    CopyArray(&status_msg_.joint_position_desired, state.q_d);
+    CopyArray(&status_msg_.joint_velocity, state.dq);
+    CopyArray(&status_msg_.joint_velocity_desired, state.dq_d);
+    CopyArray(&status_msg_.joint_acceleration_desired, state.ddq_d);
+    CopyArray(&status_msg_.joint_torque, state.tau_J);
+    CopyArray(&status_msg_.joint_torque_desired, state.tau_J_d);
+    CopyArray(&status_msg_.joint_torque_external, state.tau_ext_hat_filtered);
+    status_msg_.control_command_success_rate =
+        state.control_command_success_rate;
+    switch (state.robot_mode) {
+      case franka::RobotMode::kOther: {
+        status_msg_.robot_mode = drake::lcmt_panda_status::kOther;
+        break;
+      }
+      case franka::RobotMode::kIdle: {
+        status_msg_.robot_mode = drake::lcmt_panda_status::kIdle;
+        break;
+      }
+      case franka::RobotMode::kMove: {
+        status_msg_.robot_mode = drake::lcmt_panda_status::kMove;
+        break;
+      }
+      case franka::RobotMode::kGuiding: {
+        status_msg_.robot_mode = drake::lcmt_panda_status::kGuiding;
+        break;
+      }
+      case franka::RobotMode::kReflex: {
+        status_msg_.robot_mode = drake::lcmt_panda_status::kReflex;
+        break;
+      }
+      case franka::RobotMode::kUserStopped: {
+        status_msg_.robot_mode = drake::lcmt_panda_status::kUserStopped;
+        break;
+      }
+      case franka::RobotMode::kAutomaticErrorRecovery: {
+        status_msg_.robot_mode =
+            drake::lcmt_panda_status::kAutomaticErrorRecovery;
+        break;
+      }
+    }
+
+    status_msg_.robot_utime = state.time.toMSec() * 1000;
+    lcm_.publish(FLAGS_lcm_status_channel, &status_msg_);
   }
 
   franka::Robot robot_;
   lcm::LCM lcm_;
   std::array<double, 7> initial_q_;
   int ticks_{0};
-  bot_core::robot_state_t state_msg_{};
+  bot_core::robot_state_t robot_state_msg_{};
+  drake::lcmt_panda_status status_msg_{};
   std::optional<bot_core::joint_state_t> command_;
 };
 

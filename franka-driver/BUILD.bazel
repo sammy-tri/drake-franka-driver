@@ -8,6 +8,7 @@ cc_binary(
         "franka_driver.cc",
     ],
     deps = [
+        "@drake//lcmtypes:panda",
     	"@gflags",
         "@lcm",
         "@lcmtypes_bot2_core",
