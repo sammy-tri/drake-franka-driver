@@ -5,8 +5,8 @@ workspace(name = "drake_franka_driver")
 load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
 
 (DRAKE_COMMIT, DRAKE_CHECKSUM) = (
-    "6a5588580c094a95069062f20b648b299451df10",
-    "024589acd1593291d59b354f606dfc6065c7babfc0e7b1d76bb41ff74d2150b4",
+    "36c80fc3dc7bd4765dd4c303d8bac0ec1b603e26",
+    "afe30fffcc59f57aaf300ffc39895afff3c5edd6059b279c1fe552a59b213bdd",
 )
 # Before changing the COMMIT, temporarily uncomment the next line so that Bazel
 # displays the suggested new value for the CHECKSUM.
@@ -18,8 +18,7 @@ http_archive(
     sha256 = DRAKE_CHECKSUM,
     strip_prefix = "drake-{}".format(DRAKE_COMMIT),
     urls = [x.format(DRAKE_COMMIT) for x in [
-        # "https://github.com/RobotLocomotion/drake/archive/{}.tar.gz",
-        "https://github.com/sammy-tri/drake/archive/{}.tar.gz",
+        "https://github.com/RobotLocomotion/drake/archive/{}.tar.gz",
     ]],
 )
 
