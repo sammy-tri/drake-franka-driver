@@ -1,0 +1,20 @@
+# -*- mode: python -*-
+# vi: set ft=python :
+
+package(default_visibility = ["//visibility:public"])
+
+cc_library(
+    name = "common_robotics_utilities_base",
+    srcs = [
+        "src/common_robotics_utilities/serialization.cpp",
+    ],
+    hdrs = [
+        "include/common_robotics_utilities/print.hpp",
+        "include/common_robotics_utilities/serialization.hpp",
+        "include/common_robotics_utilities/utility.hpp",
+    ],
+    includes = ["include"],
+    deps = [
+        "@eigen",
+    ],
+)

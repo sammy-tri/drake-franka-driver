@@ -4,16 +4,53 @@ package(default_visibility = ["//visibility:public"])
 
 cc_binary(
     name = "franka_driver",
-    srcs = [
-        "franka_driver.cc",
-    ],
+    srcs = ["franka_driver.cc"],
     deps = [
+        "@common_robotics_utilities//:common_robotics_utilities_base",
+        "@drake//common:essential",
         "@drake//lcmtypes:panda",
-    	"@gflags",
+        "@gflags",
         "@lcm",
-        "@lcmtypes_bot2_core",
-        "@lcmtypes_robotlocomotion",
         "@libfranka",
+    ],
+)
+
+cc_binary(
+    name = "franka_hand_driver",
+    srcs = ["franka_hand_driver.cc"],
+    deps = [
+        "@common_robotics_utilities//:common_robotics_utilities_base",
+        "@drake//common:essential",
+        "@drake//lcmtypes:schunk",
+        "@gflags",
+        "@lcm",
+        "@libfranka",
+    ],
+)
+
+cc_binary(
+    name = "franka_driver_legacy",
+    srcs = ["franka_driver.cc"],
+    deps = [
+        "@common_robotics_utilities//:common_robotics_utilities_base",
+        "@drake//common:essential",
+        "@drake//lcmtypes:panda",
+        "@gflags",
+        "@lcm",
+        "@libfranka_legacy",
+    ],
+)
+
+cc_binary(
+    name = "franka_hand_driver_legacy",
+    srcs = ["franka_hand_driver.cc"],
+    deps = [
+        "@common_robotics_utilities//:common_robotics_utilities_base",
+        "@drake//common:essential",
+        "@drake//lcmtypes:schunk",
+        "@gflags",
+        "@lcm",
+        "@libfranka_legacy",
     ],
 )
 
